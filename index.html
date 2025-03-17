@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormCanvas - Smart Form Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .form-preview {
+            min-height: 300px;
+            border: 2px dashed #e2e8f0;
+        }
+        .question-types::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">FormCanvas</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="saveForm" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Save Form</button>
+                    <button id="previewForm" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200">Preview</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-12 gap-8">
+            <!-- Question Types Sidebar -->
+            <div class="col-span-3">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-4">Question Types</h2>
+                    <div class="question-types space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+                        <div class="question-type p-3 bg-gray-50 rounded cursor-pointer hover:bg-gray-100" draggable="true" data-type="text">
+                            <i class="bi bi-text-paragraph me-2"></i>Text Input
+                        </div>
+                        <div class="question-type p-3 bg-gray-50 rounded cursor-pointer hover:bg-gray-100" draggable="true" data-type="mcq">
+                            <i class="bi bi-list-check me-2"></i>Multiple Choice
+                        </div>
+                        <div class="question-type p-3 bg-gray-50 rounded cursor-pointer hover:bg-gray-100" draggable="true" data-type="dropdown">
+                            <i class="bi bi-menu-down me-2"></i>Dropdown
+                        </div>
+                        <div class="question-type p-3 bg-gray-50 rounded cursor-pointer hover:bg-gray-100" draggable="true" data-type="file">
+                            <i class="bi bi-file-earmark-arrow-up me-2"></i>File Upload
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Builder Area -->
+            <div class="col-span-9">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <input type="text" id="formTitle" class="w-full text-2xl font-bold border-none focus:outline-none mb-4" placeholder="Untitled Form">
+                    <div id="formDescription" class="mb-6">
+                        <textarea class="w-full p-2 border rounded" placeholder="Form description (optional)"></textarea>
+                    </div>
+                    <div id="formBuilder" class="form-preview rounded-lg p-4"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const formBuilder = document.getElementById('formBuilder');
+            const questionTypes = document.querySelectorAll('.question-type');
+            let questionCounter = 0;
+
+            // Make questions draggable
+            questionTypes.forEach(type => {
+                type.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', type.dataset.type);
+                });
+            });
+
+            // Handle drag and drop
+            formBuilder.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            formBuilder.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const questionType = e.dataTransfer.getData('text/plain');
+                addQuestion(questionType);
+            });
+
+            function addQuestion(type) {
+                questionCounter++;
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question-container bg-gray-50 p-4 rounded-lg mb-4';
+                
+                let questionHTML = '';
+                switch(type) {
+                    case 'text':
+                        questionHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <input type="text" class="text-lg font-medium bg-transparent border-none focus:outline-none" placeholder="Question text">
+                                <button class="delete-question text-red-500 hover:text-red-700">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <input type="text" class="w-full p-2 border rounded" placeholder="Text answer" disabled>
+                        `;
+                        break;
+                    case 'mcq':
+                        questionHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <input type="text" class="text-lg font-medium bg-transparent border-none focus:outline-none" placeholder="Multiple choice question">
+                                <button class="delete-question text-red-500 hover:text-red-700">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="options-container space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <input type="radio" disabled>
+                                    <input type="text" class="p-2 border rounded" placeholder="Option 1">
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input type="radio" disabled>
+                                    <input type="text" class="p-2 border rounded" placeholder="Option 2">
+                                </div>
+                            </div>
+                            <button class="add-option mt-2 text-blue-600 hover:text-blue-700">
+                                <i class="bi bi-plus-circle"></i> Add Option
+                            </button>
+                        `;
+                        break;
+                    case 'dropdown':
+                        questionHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <input type="text" class="text-lg font-medium bg-transparent border-none focus:outline-none" placeholder="Dropdown question">
+                                <button class="delete-question text-red-500 hover:text-red-700">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <select class="w-full p-2 border rounded" disabled>
+                                <option>Select an option</option>
+                            </select>
+                        `;
+                        break;
+                    case 'file':
+                        questionHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <input type="text" class="text-lg font-medium bg-transparent border-none focus:outline-none" placeholder="File upload question">
+                                <button class="delete-question text-red-500 hover:text-red-700">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="border-2 border-dashed rounded-lg p-4 text-center">
+                                <i class="bi bi-cloud-upload text-2xl"></i>
+                                <p class="mt-2">Drop files here or click to upload</p>
+                            </div>
+                        `;
+                        break;
+                }
+
+                questionDiv.innerHTML = questionHTML;
+                formBuilder.appendChild(questionDiv);
+
+                // Add event listeners for delete buttons
+                questionDiv.querySelector('.delete-question').addEventListener('click', () => {
+                    questionDiv.remove();
+                });
+
+                // Add event listeners for adding options in MCQ
+                if (type === 'mcq') {
+                    questionDiv.querySelector('.add-option').addEventListener('click', () => {
+                        const optionsContainer = questionDiv.querySelector('.options-container');
+                        const newOption = document.createElement('div');
+                        newOption.className = 'flex items-center space-x-2';
+                        newOption.innerHTML = `
+                            <input type="radio" disabled>
+                            <input type="text" class="p-2 border rounded" placeholder="New Option">
+                        `;
+                        optionsContainer.appendChild(newOption);
+                    });
+                }
+            }
+
+            // Save Form functionality
+            document.getElementById('saveForm').addEventListener('click', () => {
+                const formData = {
+                    title: document.getElementById('formTitle').value,
+                    description: document.getElementById('formDescription').querySelector('textarea').value,
+                    questions: Array.from(formBuilder.children).map(question => {
+                        return {
+                            type: question.dataset.type,
+                            text: question.querySelector('input[type="text"]').value
+                        };
+                    })
+                };
+                console.log('Form Data:', formData);
+                alert('Form saved successfully!');
+            });
+
+            // Preview Form functionality
+            document.getElementById('previewForm').addEventListener('click', () => {
+                alert('Preview mode not implemented in this demo');
+            });
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
